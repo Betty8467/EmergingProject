@@ -1,0 +1,287 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from xgboost import XGBRegressor
+from sklearn.metrics import accuracy_score
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# Load the time series data
+data = pd.read_csv('time_series_data.csv')  # Replace 'time_series_data.csv' with your file name
+
+# Define the features
+features = ['542236', '67321', '549295', '41108', '541982']
+
+# Loop through each feature
+for feature in features:
+    X = data[feature].values.reshape(-1, 1)
+    y = data['target'].values
+
+    # Split the dataset into training and testing sets
+    X_train = X[:36]
+    y_train = y[:36]
+    X_test = X[36:]
+    y_test = y[36:]
+
+    # Standardize the features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # Apply PCA for dimensionality reduction
+    pca = PCA(n_components=1)
+    X_train_pca = pca.fit_transform(X_train_scaled)
+    X_test_pca = pca.transform(X_test_scaled)
+
+    # Define models
+    models = {
+        'Linear Regression': LinearRegression(),
+        'MLP': MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000),
+        'Gradient Boosting': GradientBoostingRegressor(),
+        'Random Forest': RandomForestRegressor(),
+        'XGBoost': XGBRegressor()
+    }
+
+    accuracies = {}
+
+    # Train and evaluate each model
+    for name, model in models.items():
+        model.fit(X_train_pca, y_train)
+        y_pred = model.predict(X_test_pca)
+        accuracy = 100 * (1 - np.abs((y_test - y_pred) / y_test)).mean()
+        accuracies[name] = accuracy
+
+    # Print accuracies for each model
+    print(f"Feature: {feature}")
+    for name, accuracy in accuracies.items():
+        print(f"{name}: Accuracy = {accuracy:.2f}%")
+
+    # Visualize the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(data.index, data['target'], label='Actual')
+    for name, model in models.items():
+        model.fit(X_train_pca, y_train)
+        y_pred = model.predict(X_test_pca)
+        plt.plot(data.index[36:], y_pred, label=name)
+    plt.xlabel('Time')
+    plt.ylabel('Target')
+    plt.title(f'Predictions for Feature: {feature}')
+    plt.legend()
+    plt.show()
+
+# Identify the best model based on accuracy
+best_model = max(accuracies, key=accuracies.get)
+print(f"The best model is: {best_model} with an accuracy of {accuracies[best_model]:.2f}%")
+
+
+
+
+
+
+
+
+
+
+
+
+======================
+======================
+
+# Plot actual vs predicted values
+plot_actual_vs_predicted(y_test, models[best_model], X_test) 
+#plot_actual_vs_predicted(y_test, best_model, md) 
+
+# Convert X_test into a pandas DataFrame
+#X_test_df = pd.DataFrame(X_test, columns=['Year'])
+    
+# Create DataFrame for results
+last_36_months = data['Unnamed: 0'].iloc[-36:]
+
+
+#'Year': X_test_df['Year'],
+results = pd.DataFrame({
+    'Year': last_36_months,
+    'Target Value': y_test,
+    'Predicted Values': best_model.predict(X_test),
+    'Accuracy': accuracies[best_model_name]
+})
+
+# Save results to Excel
+#results.to_excel(f'{feature}_Result_Jean.xlsx', index=False)
+results.to_excel(f'{feature}Result_Jean&Betty.xlsx', index=False)
+#excel_file_path = "Users/kiwi/Documents/cstp classes/EmergingProject/Final Project 1/Final_Report_Jean&Betty.xlsx"
+
+
+# Open the Excel file using the default application
+#os.system(f"open {excel_file_path}")
+
+
+
+
+
+
+
+
+
+
+
+=================
+=================
+
+#import pandas as pd
+#from docx import Document
+
+#def plot_actual_vs_predicted(y_test, best_model, md, filename):
+#    # Plot actual vs predicted values
+#    plt.plot(y_test, label='Actual')
+#    plt.plot(best_model.predict(md), label='Predicted')
+#    plt.xlabel('Index')
+#    plt.ylabel('Target Value')
+#    plt.title('Actual vs Predicted Values')
+#    plt.legend()
+    
+#    # Save the plot to an Excel file
+#    df = pd.DataFrame({'Actual': y_test, 'Predicted': best_model.predict(md)})
+#    df.to_excel(filename + ".xlsx", index=False)
+
+#    # Save the plot to a Word document
+#    doc = Document()
+#    doc.add_heading('Actual vs Predicted Values', level=1)
+#    doc.add_paragraph("Actual vs Predicted Values:")
+#    doc.add_table(df.shape[0]+1, df.shape[1], style="Table Grid")
+#    table = doc.tables[0]
+#    for i, column in enumerate(df.columns):
+#        table.cell(0, i).text = column
+#        for j, value in enumerate(df[column]):
+#            table.cell(j+1, i).text = str(value)
+#    doc.save(filename + ".docx")
+
+# Example usage
+#plot_actual_vs_predicted(y_test, models[best_model], X_test, "result")
+
+
+
+
+
+
+=============
+
+import pandas as pd
+from docx import Document
+
+def plot_actual_vs_predicted(y_test, best_model, md, filename, last_36_months):
+    # Check if lengths of arrays are consistent
+    if len(last_36_months) != len(y_test) or len(y_test) != len(best_model.predict(md)):
+        raise ValueError("Lengths of arrays are not consistent.")
+    
+    # Plot actual vs predicted values
+    plt.plot(y_test, label='Actual')
+    plt.plot(best_model.predict(md), label='Predicted')
+    plt.xlabel('Index')
+    plt.ylabel('Target Value')
+    plt.title('Actual vs Predicted Values')
+    plt.legend()
+    
+    # Save the plot to an Excel file
+    df = pd.DataFrame({
+        'Year': last_36_months,
+        'Target Values': y_test, 
+        'Predicted Values': best_model.predict(md)
+        })
+    df.to_excel(filename + ".xlsx", index=False)
+
+    # Save the plot to a Word document
+    doc = Document()
+    doc.add_heading('Actual vs Predicted Values', level=1)
+    doc.add_paragraph("Actual vs Predicted Values:")
+    doc.add_table(df.shape[0]+1, df.shape[1], style="Table Grid")
+    table = doc.tables[0]
+    for i, column in enumerate(df.columns):
+        table.cell(0, i).text = column
+        for j, value in enumerate(df[column]):
+            table.cell(j+1, i).text = str(value)
+    doc.save(filename + ".docx")
+
+# Example usage
+plot_actual_vs_predicted(y_test, models[best_model], X_test, "result", last_36_months)
+
+
+
+
+
+=====orig======
+
+import pandas as pd
+from docx import Document
+
+def plot_actual_vs_predicted(y_test, best_model, X_test, filename, last_36_months):
+    # Plot actual vs predicted values
+    plt.plot(last_36_months, y_test, label='Actual')
+    plt.plot(last_36_months, best_model.predict(X_test), label='Predicted')
+    plt.xlabel('Year')
+    plt.ylabel('Target Value')
+    plt.title('Actual vs Predicted Values')
+    plt.legend()
+    
+    # Save the plot to an Excel file
+    df = pd.DataFrame({
+        'Year': last_36_months,
+        'Target Values': y_test, 
+        'Predicted Values': best_model.predict(X_test),
+        #'Accuracy': accuracies[name]
+        })
+    df.to_excel(filename + ".xlsx", index=False)
+
+    # Save the plot to a Word document
+    doc = Document()
+    doc.add_heading('Actual vs Predicted Values', level=1)
+    doc.add_paragraph("Actual vs Predicted Values:")
+    doc.add_table(df.shape[0]+1, df.shape[1], style="Table Grid")
+    table = doc.tables[0]
+    for i, column in enumerate(df.columns):
+        table.cell(0, i).text = column
+        for j, value in enumerate(df[column]):
+            table.cell(j+1, i).text = str(value)
+    doc.save(filename + ".docx")
+
+# Example usage
+plot_actual_vs_predicted(y_test, models[best_model], X_test, "result", last_36_months)
+
+
+
+
+
+
+
+
+
+import pandas as pd
+from docx import Document
+
+def plot_actual_vs_predicted(y_test, best_model, X_test, filename, last_36_months):
+    # Save the plot to an Excel file
+    df = pd.DataFrame({
+        'Year': last_36_months,
+        'Target Values': y_test, 
+        'Predicted Values': best_model.predict(X_test),
+        })
+    df.to_excel(filename + ".xlsx", index=False)
+
+    # Save the plot to a Word document
+    doc = Document()
+    doc.add_heading('Actual vs Predicted Values', level=1)
+    doc.add_paragraph("Actual vs Predicted Values:")
+    doc.add_table(df.shape[0]+1, df.shape[1], style="Table Grid")
+    table = doc.tables[0]
+    for i, column in enumerate(df.columns):
+        table.cell(0, i).text = column
+        for j, value in enumerate(df[column]):
+            table.cell(j+1, i).text = str(value)
+    doc.save(filename + ".docx")
+
+# Example usage
+#plot_actual_vs_predicted(y_test, models[best_model], X_test, "result", last_36_months)
